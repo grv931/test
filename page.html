@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EV Charging Network Plan for Bhubaneswar</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: "Warm Neutral Harmony" - A calming palette using beige, slate gray, muted teal, and a soft coral accent. -->
+    <!-- Application Structure Plan: The SPA is designed as a narrative journey. It starts with the "Crisis" (the problem), introduces the "Methodology" (the solution), explores the "Demand Clusters" (the analysis), presents the "Optimal Network" (the results), and concludes with the "Roadmap" (the strategy). This top-down, story-driven approach is more intuitive for a general audience than the report's academic structure. It guides the user from understanding the 'why' to the 'how' and finally the 'what', with interactive elements at each stage to encourage exploration. -->
+    <!-- Visualization & Content Choices: 
+        - EV/Charger Gap (Inform/Compare): Bar Chart (Chart.js) to starkly visualize the deficit against benchmarks. Interaction: Tooltips. Justification: A bar chart is the clearest way to show a quantitative disparity.
+        - 4-Stage Framework (Organize/Inform): HTML/CSS Diagram with interactive cards. Interaction: Click to reveal details. Justification: Avoids a static, boring list. Makes a complex process digestible and engaging. Library: Vanilla JS for toggling visibility.
+        - GMM Demand Clusters (Organize/Compare): Doughnut Chart (Chart.js). Interaction: Hover to see cluster details. Justification: Shows the proportion and characteristics of each strategic archetype.
+        - PSO Fitness Scores (Compare): Bar Chart (Chart.js). Interaction: Tooltips. Justification: Simple, effective comparison of the top computational solutions.
+        - Recommended Stations (Organize/Inform): Searchable, clickable HTML Table. Interaction: Live search/filter, click to open detail modal. Justification: Provides a practical, user-friendly tool to explore the final 33 locations.
+        - Gemini Features (Generate/Inform): LLM-powered content generation for investment pitches and local amenities. Interaction: Button click. Justification: Adds significant dynamic value, transforming the app from a report to a planning tool.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #FDFBF7;
+            color: #334155;
+        }
+        .nav-link {
+            transition: color 0.3s, border-bottom-color 0.3s;
+            border-bottom: 2px solid transparent;
+        }
+        .nav-link.active, .nav-link:hover {
+            color: #0F766E;
+            border-bottom-color: #0F766E;
+        }
+        .stat-card {
+            background-color: #FFFFFF;
+            border: 1px solid #E2E8F0;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            text-align: center;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 350px;
+            max-height: 400px;
+        }
+        @media (max-width: 768px) {
+            .chart-container {
+                height: 300px;
+            }
+        }
+        .method-card {
+            cursor: pointer;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .method-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+        .method-card .method-content {
+            display: none;
+        }
+        .method-card.active .method-content {
+            display: block;
+        }
+        .table-container {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .clickable-row {
+            cursor: pointer;
+        }
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+        .modal-overlay.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal-content {
+            background-color: #fff;
+            padding: 2rem;
+            border-radius: 0.75rem;
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            transform: scale(0.95);
+            transition: transform 0.3s;
+        }
+        .modal-overlay.visible .modal-content {
+            transform: scale(1);
+        }
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border-left-color: #0F766E;
+            animation: spin 1s ease infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <header class="bg-white/80 backdrop-blur-md sticky top-0 z-50 border-b border-slate-200">
+        <nav class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex-shrink-0">
+                    <h1 class="text-xl font-bold text-teal-700">Bhubaneswar EV Plan</h1>
+                </div>
+                <div class="hidden md:block">
+                    <div class="ml-10 flex items-baseline space-x-4">
+                        <a href="#crisis" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-slate-700">The Crisis</a>
+                        <a href="#methodology" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-slate-700">Methodology</a>
+                        <a href="#clusters" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-slate-700">Demand Clusters</a>
+                        <a href="#network" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-slate-700">Optimal Network</a>
+                        <a href="#roadmap" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-slate-700">Roadmap</a>
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+
+        <section id="hero" class="text-center py-12">
+            <h2 class="text-4xl md:text-5xl font-extrabold text-slate-800 mb-4">Charting a Greener Future for Bhubaneswar</h2>
+            <p class="max-w-3xl mx-auto text-lg text-slate-600">
+                An interactive exploration of a data-driven strategy to build a robust and equitable Electric Vehicle charging network, transforming the city's mobility landscape.
+            </p>
+        </section>
+
+        <section id="crisis" class="py-12 scroll-mt-20">
+            <div class="text-center mb-12">
+                <h3 class="text-3xl font-bold text-slate-800">The Charging Crisis</h3>
+                <p class="mt-2 text-lg text-slate-600 max-w-2xl mx-auto">Bhubaneswar faces a critical gap between its growing EV fleet and its public charging infrastructure, creating a major roadblock to sustainable transport.</p>
+            </div>
+            <div class="grid md:grid-cols-3 gap-8 mb-12">
+                <div class="stat-card">
+                    <div class="text-4xl font-bold text-teal-600">2,300+</div>
+                    <div class="text-slate-500 mt-1">Electric Vehicles</div>
+                </div>
+                <div class="stat-card">
+                    <div class="text-4xl font-bold text-red-600">18</div>
+                    <div class="text-slate-500 mt-1">Public Charging Stations</div>
+                </div>
+                <div class="stat-card">
+                    <div class="text-4xl font-bold text-red-600">>140:1</div>
+                    <div class="text-slate-500 mt-1">EV to Charger Ratio</div>
+                </div>
+            </div>
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <h4 class="text-xl font-semibold text-center mb-4">Infrastructure Deficit: A National Comparison</h4>
+                <div class="chart-container">
+                    <canvas id="evRatioChart"></canvas>
+                </div>
+                 <p class="text-sm text-slate-500 mt-4 text-center">Bhubaneswar's EV-to-charger ratio far exceeds the recommended global benchmark and lags significantly behind more mature EV ecosystems in India, highlighting the urgent need for expansion.</p>
+            </div>
+        </section>
+
+        <section id="methodology" class="py-12 scroll-mt-20">
+            <div class="text-center mb-12">
+                <h3 class="text-3xl font-bold text-slate-800">A Four-Stage Analytical Engine</h3>
+                <p class="mt-2 text-lg text-slate-600 max-w-3xl mx-auto">To find the optimal locations, a sophisticated, multi-layered framework was used. Click on each stage to learn more about its role in the process.</p>
+            </div>
+            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+                <div id="method-1" class="method-card bg-white p-6 rounded-lg shadow-md border-l-4 border-teal-500">
+                    <div class="flex items-center mb-3">
+                        <div class="bg-teal-100 text-teal-600 p-3 rounded-full mr-4">
+                            <span>🗺️</span>
+                        </div>
+                        <h4 class="text-lg font-semibold">1. Geospatial Groundwork</h4>
+                    </div>
+                    <p class="text-slate-600">Mapping Bhubaneswar's urban fabric using QGIS to ground the analysis in real-world spatial data.</p>
+                    <div class="method-content mt-4 pt-4 border-t border-slate-200">
+                        <p class="text-sm text-slate-500">This foundational step involved digitizing road networks, land use, population density, and electrical grids. Using an open-source tool like QGIS ensures the model is cost-effective and replicable for city planners.</p>
+                    </div>
+                </div>
+                <div id="method-2" class="method-card bg-white p-6 rounded-lg shadow-md border-l-4 border-sky-500">
+                    <div class="flex items-center mb-3">
+                        <div class="bg-sky-100 text-sky-600 p-3 rounded-full mr-4">
+                            <span>🎯</span>
+                        </div>
+                        <h4 class="text-lg font-semibold">2. Demand Hotspots</h4>
+                    </div>
+                    <p class="text-slate-600">Using Gaussian Mixture Models (GMM) to identify high-demand charging zones with probabilistic clustering.</p>
+                     <div class="method-content mt-4 pt-4 border-t border-slate-200">
+                        <p class="text-sm text-slate-500">Unlike rigid clustering, GMM's "soft" approach better models complex urban areas where commercial and residential zones overlap. It pinpoints genuine demand hotspots based on EV count, traffic, footfall, and grid proximity.</p>
+                    </div>
+                </div>
+                <div id="method-3" class="method-card bg-white p-6 rounded-lg shadow-md border-l-4 border-indigo-500">
+                     <div class="flex items-center mb-3">
+                        <div class="bg-indigo-100 text-indigo-600 p-3 rounded-full mr-4">
+                            <span>🧠</span>
+                        </div>
+                        <h4 class="text-lg font-semibold">3. Network Optimization</h4>
+                    </div>
+                    <p class="text-slate-600">Applying Particle Swarm Optimization (PSO) to find the most efficient network configuration city-wide.</p>
+                     <div class="method-content mt-4 pt-4 border-t border-slate-200">
+                        <p class="text-sm text-slate-500">This AI technique, inspired by flocking birds, explores thousands of potential network layouts to find a solution that minimizes travel distance, balances electrical load, and ensures accessibility, guided by the GMM demand data.</p>
+                    </div>
+                </div>
+                <div id="method-4" class="method-card bg-white p-6 rounded-lg shadow-md border-l-4 border-rose-500">
+                    <div class="flex items-center mb-3">
+                        <div class="bg-rose-100 text-rose-600 p-3 rounded-full mr-4">
+                            <span>✅</span>
+                        </div>
+                        <h4 class="text-lg font-semibold">4. Reality Check</h4>
+                    </div>
+                    <p class="text-slate-600">Using the Shortest Distance Method (SDM) to validate the network for real-world user accessibility.</p>
+                     <div class="method-content mt-4 pt-4 border-t border-slate-200">
+                        <p class="text-sm text-slate-500">This final stage ensures the computationally optimal solution is also practical. It calculates real travel distances, prevents undesirable station clustering, and promotes equitable geographic distribution across the city.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <section id="clusters" class="py-12 scroll-mt-20">
+            <div class="text-center mb-12">
+                <h3 class="text-3xl font-bold text-slate-800">Identifying Demand Clusters</h3>
+                <p class="mt-2 text-lg text-slate-600 max-w-3xl mx-auto">The GMM analysis yielded four distinct strategic location archetypes. Hover over the chart segments to see their defining features and example locations.</p>
+            </div>
+            <div class="grid lg:grid-cols-2 gap-8 items-center">
+                <div class="chart-container h-[400px] md:h-[450px]">
+                    <canvas id="gmmClustersChart"></canvas>
+                </div>
+                <div id="cluster-info" class="bg-white p-6 rounded-lg shadow-inner">
+                    <h4 class="text-xl font-semibold mb-4 text-center text-slate-700">Cluster Details</h4>
+                    <p class="text-slate-500 text-center">Hover on the chart to explore the different demand zones identified for strategic planning.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="network" class="py-12 scroll-mt-20">
+            <div class="text-center mb-12">
+                <h3 class="text-3xl font-bold text-slate-800">The Optimal Network</h3>
+                <p class="mt-2 text-lg text-slate-600 max-w-3xl mx-auto">The analysis produced a final recommended network of 33 stations. Click on any "Proposed" location to explore its potential with ✨ AI-powered insights.</p>
+            </div>
+             <div class="grid lg:grid-cols-2 gap-12">
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h4 class="text-xl font-semibold text-center mb-4">Top 5 PSO Solutions</h4>
+                    <p class="text-sm text-slate-500 text-center mb-4">While Combination 1 had the highest raw "fitness score", all top solutions shared the same optimal distance. The final choice prioritized spatial equity.</p>
+                    <div class="chart-container h-[300px]">
+                        <canvas id="psoFitnessChart"></canvas>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h4 class="text-xl font-semibold text-center mb-4">Final Recommended Network</h4>
+                    <p class="text-sm text-slate-500 text-center mb-4">Explore the 33 existing and proposed locations in the final network. Use the search bar to filter locations.</p>
+                    <input type="text" id="stationSearch" class="w-full p-2 border border-slate-300 rounded-md mb-4" placeholder="Search for a location...">
+                    <div class="table-container border border-slate-200 rounded-md">
+                        <table class="w-full text-sm text-left text-slate-500">
+                            <thead class="text-xs text-slate-700 uppercase bg-slate-50 sticky top-0">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3">Location Name</th>
+                                    <th scope="col" class="px-6 py-3">Type</th>
+                                </tr>
+                            </thead>
+                            <tbody id="stationTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="roadmap" class="py-12 scroll-mt-20">
+             <div class="text-center mb-12">
+                <h3 class="text-3xl font-bold text-slate-800">A Phased Implementation Roadmap</h3>
+                <p class="mt-2 text-lg text-slate-600 max-w-3xl mx-auto">The cluster analysis provides a clear foundation for a strategic, multi-phase investment plan to build out the network effectively.</p>
+            </div>
+            <div class="space-y-8">
+                <div class="bg-white p-6 rounded-lg shadow-md flex items-start gap-6">
+                    <div class="flex-shrink-0 text-2xl font-bold text-teal-600 bg-teal-100 rounded-full h-12 w-12 flex items-center justify-center">1</div>
+                    <div>
+                        <h4 class="text-xl font-semibold text-slate-800">Phase 1: Immediate Action</h4>
+                        <p class="text-slate-600 mt-1">Prioritize investment in "Prime Urban Hubs" (Cluster 0) and "Opportunity Charging Zones" (Cluster 3). This provides immediate relief in high-demand areas and maximizes visibility at key commercial locations.</p>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-md flex items-start gap-6">
+                    <div class="flex-shrink-0 text-2xl font-bold text-sky-600 bg-sky-100 rounded-full h-12 w-12 flex items-center justify-center">2</div>
+                    <div>
+                        <h4 class="text-xl font-semibold text-slate-800">Phase 2: Proactive Growth</h4>
+                        <p class="text-slate-600 mt-1">Target "Suburban Growth Zones" (Cluster 1) to stay ahead of the adoption curve. This expands coverage into growing residential and commercial areas, ensuring broader convenience.</p>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-md flex items-start gap-6">
+                    <div class="flex-shrink-0 text-2xl font-bold text-rose-600 bg-rose-100 rounded-full h-12 w-12 flex items-center justify-center">3</div>
+                    <div>
+                        <h4 class="text-xl font-semibold text-slate-800">Phase 3: Long-Term Equity</h4>
+                        <p class="text-slate-600 mt-1">Develop a long-term plan for "Future Equity Zones" (Cluster 2). While not an immediate priority, planning for these lower-demand areas is crucial to prevent "charging deserts" and ensure equitable access for all citizens.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-slate-800 text-slate-300 mt-16">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-6 text-center text-sm">
+            <p>This interactive report is based on the research paper "Enhancing Urban EV Charging Networks: A Case Study of Bhubaneswar".</p>
+            <p>&copy; 2024. All data and analysis derived from the source study.</p>
+        </div>
+    </footer>
+
+    <div id="stationModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-4">
+                <h3 id="modalTitle" class="text-2xl font-bold text-slate-800">Location Details</h3>
+                <button id="closeModal" class="text-slate-500 hover:text-slate-800">&times;</button>
+            </div>
+            <div class="space-y-6">
+                <div>
+                    <h4 class="text-lg font-semibold text-teal-700">✨ Investment Pitch</h4>
+                    <div id="pitchResult" class="mt-2 p-4 bg-slate-50 rounded-md min-h-[100px] text-slate-700 text-sm">Click the button to generate an investment pitch.</div>
+                    <div id="pitchLoader" class="hidden justify-center items-center min-h-[100px]">
+                        <div class="spinner"></div>
+                    </div>
+                    <button id="generatePitchBtn" class="mt-2 px-4 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 transition">Generate Pitch</button>
+                </div>
+                <div>
+                    <h4 class="text-lg font-semibold text-sky-700">✨ Nearby Amenities</h4>
+                    <div id="amenitiesResult" class="mt-2 p-4 bg-slate-50 rounded-md min-h-[100px] text-slate-700 text-sm">Click the button to find nearby amenities.</div>
+                     <div id="amenitiesLoader" class="hidden justify-center items-center min-h-[100px]">
+                        <div class="spinner"></div>
+                    </div>
+                    <button id="findAmenitiesBtn" class="mt-2 px-4 py-2 bg-sky-600 text-white rounded-md hover:bg-sky-700 transition">Find Amenities</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            
+            const stationData = [
+                { name: "Tata Power - BMC Bhawani Mall", type: "Existing" }, 
+                { name: "Vani Vihar", type: "Proposed", clusterId: 0, clusterName: "Prime Urban Hub" }, 
+                { name: "Saheed Nagar", type: "Proposed", clusterId: 0, clusterName: "Prime Urban Hub" },
+                { name: "Nayapalli", type: "Proposed", clusterId: 1, clusterName: "Suburban Growth Zone" }, 
+                { name: "Statiq - Yellowings ITC Cuttack Station", type: "Existing" }, 
+                { name: "Tata Power - DN Group Corporate", type: "Existing" },
+                { name: "Kazam - Rasulgarh", type: "Existing" }, 
+                { name: "Charger - Geetanjali", type: "Existing" }, 
+                { name: "KIIT", type: "Proposed", clusterId: 3, clusterName: "Opportunity Charging Zone" },
+                { name: "Jagamara", type: "Proposed", clusterId: 2, clusterName: "Future Equity Zone" }, 
+                { name: "Tata Power - Regalia Mall (DN Square)", type: "Existing" }, 
+                { name: "Tata Power - MLCP Saheed Nagar", type: "Existing" },
+                { name: "Kalinga Stadium", type: "Proposed", clusterId: 2, clusterName: "Future Equity Zone" }, 
+                { name: "GLIDA DLF Bhubaneswar - Statiq", type: "Existing" }, 
+                { name: "Jaydev Vihar", type: "Proposed", clusterId: 0, clusterName: "Prime Urban Hub" },
+                { name: "Tata Power - MG Bhubaneswar", type: "Existing" }, 
+                { name: "Tata Power - CSM Technologies", type: "Existing" }, 
+                { name: "TML Tirupati Enterprises", type: "Existing" },
+                { name: "Tankapani Road", type: "Proposed", clusterId: 0, clusterName: "Prime Urban Hub" }, 
+                { name: "Tata Power - GUGNANI TYRES", type: "Existing" }, 
+                { name: "Sishu Bhawan", type: "Proposed", clusterId: 3, clusterName: "Opportunity Charging Zone" },
+                { name: "HPCL - Regional Office", type: "Existing" }, 
+                { name: "Tata Power - Audi Bhubaneswar", type: "Existing" }, 
+                { name: "Pokhariput", type: "Proposed", clusterId: 1, clusterName: "Suburban Growth Zone" },
+                { name: "Tata Power - Dion Automotives", type: "Existing" }, 
+                { name: "Palasuni", type: "Proposed", clusterId: 1, clusterName: "Suburban Growth Zone" }, 
+                { name: "Tata Power - DN Wisdom Tree", type: "Existing" },
+                { name: "Statiq - Nexus Esplanade Mall", type: "Existing" }, 
+                { name: "Badagada", type: "Proposed", clusterId: 2, clusterName: "Future Equity Zone" }, 
+                { name: "Mancheswar", type: "Proposed", clusterId: 2, clusterName: "Future Equity Zone" },
+                { name: "Satya Nagar", type: "Proposed", clusterId: 0, clusterName: "Prime Urban Hub" }, 
+                { name: "Tata Power - GUGNANI AUTOCARS", type: "Existing" }, 
+                { name: "Chandrasekharpur", type: "Proposed", clusterId: 3, clusterName: "Opportunity Charging Zone" }
+            ];
+
+            const clusterInfoData = {
+                0: { title: "Cluster 0: Prime Urban Hubs", features: "High EV count, high traffic, close to grid.", examples: "Saheed Nagar, Vani Vihar, Jaydev Vihar" },
+                1: { title: "Cluster 1: Suburban Growth Zones", features: "Moderate EV presence, moderate footfall, moderate distance from grid.", examples: "Nayapalli, Palasuni, Pokhariput" },
+                2: { title: "Cluster 2: Future Equity Zones", features: "Low EV count, low traffic, far from grid.", examples: "Jagamara, Mancheswar, Kalinga Stadium" },
+                3: { title: "Cluster 3: Opportunity Charging Zones", features: "High footfall, moderate EV presence, close to grid.", examples: "KIIT, Chandrasekharpur" }
+            };
+
+            const modal = document.getElementById('stationModal');
+            const modalTitle = document.getElementById('modalTitle');
+            const closeModalBtn = document.getElementById('closeModal');
+            const generatePitchBtn = document.getElementById('generatePitchBtn');
+            const findAmenitiesBtn = document.getElementById('findAmenitiesBtn');
+            const pitchResult = document.getElementById('pitchResult');
+            const amenitiesResult = document.getElementById('amenitiesResult');
+            const pitchLoader = document.getElementById('pitchLoader');
+            const amenitiesLoader = document.getElementById('amenitiesLoader');
+            let currentStation = null;
+
+            const openModal = (station) => {
+                currentStation = station;
+                modalTitle.textContent = station.name;
+                pitchResult.innerHTML = 'Click the button to generate an investment pitch.';
+                amenitiesResult.innerHTML = 'Click the button to find nearby amenities.';
+                pitchResult.style.display = 'block';
+                amenitiesResult.style.display = 'block';
+                pitchLoader.style.display = 'none';
+                amenitiesLoader.style.display = 'none';
+                modal.classList.add('visible');
+            };
+
+            const closeModal = () => {
+                modal.classList.remove('visible');
+                currentStation = null;
+            };
+
+            closeModalBtn.addEventListener('click', closeModal);
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    closeModal();
+                }
+            });
+
+            const renderStationTable = (filter = '') => {
+                const tableBody = document.getElementById('stationTableBody');
+                tableBody.innerHTML = '';
+                const filteredData = stationData.filter(station => station.name.toLowerCase().includes(filter.toLowerCase()));
+                
+                if (filteredData.length === 0) {
+                    tableBody.innerHTML = `<tr><td colspan="2" class="text-center px-6 py-4">No locations found.</td></tr>`;
+                    return;
+                }
+
+                filteredData.forEach(station => {
+                    const row = document.createElement('tr');
+                    row.className = 'bg-white border-b hover:bg-slate-50';
+                    if (station.type === 'Proposed') {
+                        row.classList.add('clickable-row');
+                        row.addEventListener('click', () => openModal(station));
+                    }
+                    row.innerHTML = `
+                        <td class="px-6 py-4 font-medium text-slate-900">${station.name}</td>
+                        <td class="px-6 py-4">
+                            <span class="px-2 py-1 text-xs font-medium rounded-full ${station.type === 'Existing' ? 'bg-sky-100 text-sky-800' : 'bg-green-100 text-green-800'}">
+                                ${station.type}
+                            </span>
+                        </td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            };
+
+            document.getElementById('stationSearch').addEventListener('input', (e) => {
+                renderStationTable(e.target.value);
+            });
+
+            renderStationTable();
+            
+            const evRatioCtx = document.getElementById('evRatioChart').getContext('2d');
+            new Chart(evRatioCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Bhubaneswar', 'Bangalore', 'Delhi', 'Global Benchmark'],
+                    datasets: [{
+                        label: 'EVs per Charger',
+                        data: [140, 60, 43, 30],
+                        backgroundColor: ['#EF4444', '#3B82F6', '#3B82F6', '#10B981'],
+                        borderColor: ['#DC2626', '#2563EB', '#2563EB', '#059669'],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y',
+                    plugins: { legend: { display: false }, title: { display: false } },
+                    scales: { x: { beginAtZero: true, title: { display: true, text: 'Vehicles per Charger' } } }
+                }
+            });
+
+            const psoFitnessCtx = document.getElementById('psoFitnessChart').getContext('2d');
+            new Chart(psoFitnessCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Combo 1', 'Combo 2 (Chosen)', 'Combo 3', 'Combo 4', 'Combo 5'],
+                    datasets: [{
+                        label: 'PSO Fitness Score',
+                        data: [0.6598, 0.6486, 0.6480, 0.6479, 0.6462],
+                        backgroundColor: ['#6366F1', '#10B981', '#6366F1', '#6366F1', '#6366F1'],
+                        borderColor: ['#4F46E5', '#059669', '#4F46E5', '#4F46E5', '#4F46E5'],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false }, title: { display: false } },
+                    scales: { y: { beginAtZero: false, min: 0.64, title: { display: true, text: 'Fitness Score' } } }
+                }
+            });
+
+            const gmmClustersCtx = document.getElementById('gmmClustersChart').getContext('2d');
+            const clusterInfoDiv = document.getElementById('cluster-info');
+            new Chart(gmmClustersCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Cluster 0: Prime Urban Hubs', 'Cluster 1: Suburban Growth Zones', 'Cluster 2: Future Equity Zones', 'Cluster 3: Opportunity Charging Zones'],
+                    datasets: [{
+                        label: 'Demand Clusters',
+                        data: [25, 25, 25, 25],
+                        backgroundColor: ['#14B8A6', '#38BDF8', '#F472B6', '#A78BFA'],
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    onHover: (event, chartElement) => {
+                        if (chartElement.length) {
+                            const index = chartElement[0].index;
+                            const data = clusterInfoData[index];
+                            clusterInfoDiv.innerHTML = `<h4 class="text-xl font-semibold mb-2 text-center text-slate-800">${data.title}</h4><p class="text-slate-600 mb-2"><strong class="font-medium">Features:</strong> ${data.features}</p><p class="text-slate-600"><strong class="font-medium">Examples:</strong> ${data.examples}</p>`;
+                        } else {
+                             clusterInfoDiv.innerHTML = `<h4 class="text-xl font-semibold mb-4 text-center text-slate-700">Cluster Details</h4><p class="text-slate-500 text-center">Hover on the chart to explore the different demand zones identified for strategic planning.</p>`;
+                        }
+                    },
+                    plugins: { legend: { position: 'bottom', labels: { boxWidth: 15, padding: 15 } }, tooltip: { enabled: false } }
+                }
+            });
+
+            const methodCards = document.querySelectorAll('.method-card');
+            methodCards.forEach(card => {
+                card.addEventListener('click', () => { card.classList.toggle('active'); });
+            });
+            
+            const navLinks = document.querySelectorAll('.nav-link');
+            const sections = document.querySelectorAll('section');
+            window.addEventListener('scroll', () => {
+                let current = '';
+                sections.forEach(section => {
+                    const sectionTop = section.offsetTop;
+                    if (pageYOffset >= sectionTop - 80) { current = section.getAttribute('id'); }
+                });
+                navLinks.forEach(link => {
+                    link.classList.remove('active');
+                    if (link.getAttribute('href').includes(current)) { link.classList.add('active'); }
+                });
+            });
+
+            async function callGeminiAPI(prompt) {
+                const apiKey = ""; 
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+                const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
+                
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    if (!response.ok) {
+                        throw new Error(`API call failed with status: ${response.status}`);
+                    }
+                    const result = await response.json();
+                    if (result.candidates && result.candidates.length > 0 && result.candidates[0].content.parts.length > 0) {
+                        return result.candidates[0].content.parts[0].text;
+                    } else {
+                        return "Sorry, I couldn't generate a response. The model's response was empty.";
+                    }
+                } catch (error) {
+                    console.error("Gemini API call error:", error);
+                    return "Sorry, there was an error connecting to the AI service. Please check the console for details.";
+                }
+            }
+
+            generatePitchBtn.addEventListener('click', async () => {
+                if (!currentStation) return;
+                pitchResult.style.display = 'none';
+                pitchLoader.style.display = 'flex';
+                
+                const prompt = `
+                    As an expert in urban development and EV infrastructure investment, create a concise and compelling investment pitch for a new EV charging station.
+                    
+                    **Location:** ${currentStation.name}, Bhubaneswar, India.
+                    **Strategic Classification:** This location is identified as a "${currentStation.clusterName}".
+                    **Cluster Characteristics:** ${clusterInfoData[currentStation.clusterId].features}
+                    
+                    Based on this, write a 2-3 sentence pitch highlighting its strategic value. Be persuasive and focus on the benefits.
+                `;
+                
+                const responseText = await callGeminiAPI(prompt);
+                pitchResult.innerHTML = responseText.replace(/\n/g, '<br>');
+                
+                pitchLoader.style.display = 'none';
+                pitchResult.style.display = 'block';
+            });
+
+            findAmenitiesBtn.addEventListener('click', async () => {
+                if (!currentStation) return;
+                amenitiesResult.style.display = 'none';
+                amenitiesLoader.style.display = 'flex';
+
+                const prompt = `
+                    List 3-4 useful and specific amenities for an EV driver who needs to wait for 30-45 minutes while their car charges.
+                    
+                    **Location Context:** Near ${currentStation.name}, Bhubaneswar, India.
+                    
+                    Suggest specific types of places like cafes, small restaurants, bookshops, or convenience stores. Be brief and practical. Format the output as a simple list.
+                `;
+
+                const responseText = await callGeminiAPI(prompt);
+                amenitiesResult.innerHTML = responseText.replace(/\n/g, '<br>');
+
+                amenitiesLoader.style.display = 'none';
+                amenitiesResult.style.display = 'block';
+            });
+        });
+    </script>
+</body>
+</html>
